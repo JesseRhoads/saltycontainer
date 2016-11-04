@@ -1,0 +1,10 @@
+saltycontainer:
+  git_repo: 'https://github.com/proofit404/service-factory.git'
+  git_rev: 'HEAD'
+  git_target: '/root/service-factory'
+  install_command: 'python setup.py install'
+  install_cwd: '/root/service-factory'
+  install_creates: '/usr/local/lib/python2.7/dist-packages/service_factory-0.1.5-py2.7.egg'
+  start_command: 'nohup python /root/service-factory/examples/calc.py >/tmp/calc.log 2>&1 &'
+  start_creates: '/tmp/calc.log'
+  check_command: 'nc -vz 127.0.0.1 9000'

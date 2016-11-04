@@ -1,0 +1,43 @@
+##
+saltycontainer project
+Jesse Rhoads <jesserhoads@gmail.com>
+##
+
+SUMMARY
+As a simple PoC, this is code to create a Docker container that can run a Salt Minion.
+Includes an example salt formula to download/install/run a python module from github (service-factory) inside the container.
+
+CONFIGURATION/CUSTOMIZATION POINTS (SETUP)
+- Edit the docker/minion file and set master: to your Salt Master hostname, or remove it to have it default to 'salt'.
+Add any other custom salt minion tunings that you want inside the containers to the minion file, but leave the grains definition as it will be used to target the containers for state/pillar execution.
+
+- Edit the docker/Dockerfile and add in any additional changes that you may want in the base container.
+
+- OPTIONAL: Edit the Pillar in pillar/saltycontainer.sls and add top.sls.append to an environment in your pillar/top.sls to activate the pillar. Otherwise, the defaults in salt/saltycontainer/map.jinja will apply.
+
+INSTALLATION/DEPLOYMENT
+- For this example we will build and deploy on the same server. Otherwise you would have to change this to use a central docker registry/repo.
+- See example_deploy.sh for a script example. Don't forget to copy the salt states to your salt server (step 5 below) if you want to use the example script.
+1] Copy the docker directory to your Docker Machine and cd into the directory.
+2] docker build . -t saltycontainer # Builds the container.
+3] docker run -d saltycontainer # Start a container. You can start as many of these as you like.
+4] On your salt master, add the host key of the new container(s), or use something like CherryPy to add all hosts automatically.
+5] Copy salt/saltycontainer to your salt master's salt file_root, and if you plan to override values, copy the pillar file as mentioned in OPTIONAL above.
+6] salt -G 'roles:saltycontainer' state.sls saltycontainer --output=json --static | tee /tmp/state_output.json # This will execute on all containers that have the grain roles: saltycontainer set and save a json log of the salt minion jobs.
+
+VALIDATION
+If you saved /tmp/state_output.json above, you can run python check_result.py /tmp/state_output.json to have it check the result of all states. It will raise an exception if any of the states failed.
+
+ERRATTA/TO-DO/NOTES
+- The check_result.py is generic, but could potentially be extended/wrapped to support sending an alert for a failed deployment.
+- salt json output requires --static to be serialized properly, so it waits until all states complete before generating output.
+- If the salt minions don't complete or don't start, they will not show up in the json and will not be reported.
+  - A possible way to detect this would be to validate the number of expected nodes and if any are missing then the states may not have run.
+- The machines kept running out of memory with only a couple of containers; in case it is this container, please do not run it on a production system.
+- The service listens on port 9000 but only on 127.0.0.1, not on the docker IP, so it is not accessable outside the container without additional changes.
+- This currently uses the container uuid for the hostname. You could set /etc/salt/minion_id to enforce a hostname for the container, but
+  then each time the container boots you'll have a host/key conflict. So it may be easier to target using salt grains as I have done for now.
+- Installing python modules this way puts them in the root system libs, a cleaner way might be to install into a virtualenv with further effort.
+- Admittedly cmd.run is not an ideal mechanism here, if the startup script can be wrapped as a service it is easier to make more idempotent.
+  - The current example will only allow one shot to start by using the 'creates' failsafe. Could also use an onlyif/unless check instead.
+- Doesn't seem like this would scale well, there are other design patterns such as swapping with containers that already contain the correct software, that is how I have seen it done before.

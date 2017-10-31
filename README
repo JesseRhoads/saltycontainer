@@ -41,3 +41,7 @@ ERRATTA/TO-DO/NOTES
 - Admittedly cmd.run is not an ideal mechanism here, if the startup script can be wrapped as a service it is easier to make more idempotent.
   - The current example will only allow one shot to start by using the 'creates' failsafe. Could also use an onlyif/unless check instead.
 - Doesn't seem like this would scale well, there are other design patterns such as swapping with containers that already contain the correct software, that is how I have seen it done before.
+
+LICENSE
+- This project is released under the MIT Open Source License, see LICENSE.
+
